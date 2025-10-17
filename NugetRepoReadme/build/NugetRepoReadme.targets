@@ -1,8 +1,11 @@
 ﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+	<PropertyGroup>
+		<NugetRepoReadmeTaskAssembly Condition="'$(NugetRepoReadmeTaskAssembly)' == ''">$(MSBuildThisFileDirectory)..\tasks\netstandard2.0\NugetRepoReadme.dll</NugetRepoReadmeTaskAssembly>
+	</PropertyGroup>
 	<UsingTask TaskName="NugetRepoReadme.ReadmeRewriterTask"
-			   AssemblyFile="$(MSBuildThisFileDirectory)..\tasks\netstandard2.0\$(MSBuildThisFileName).dll" />
+			   AssemblyFile="$(NugetRepoReadmeTaskAssembly)" />
 	<UsingTask TaskName="NugetRepoReadme.ReadmeWriterTask"
-			   AssemblyFile="$(MSBuildThisFileDirectory)..\tasks\netstandard2.0\$(MSBuildThisFileName).dll" />
+			   AssemblyFile="$(NugetRepoReadmeTaskAssembly)" />
 
 	<!-- 1. Always define a dummy target to anchor things if BeforePack is not defined -->
 	<Target Name="BeforePackHook_NugetRepoReadme" />

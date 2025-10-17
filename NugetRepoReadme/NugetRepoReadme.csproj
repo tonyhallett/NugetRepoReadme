@@ -16,6 +16,8 @@
     <Title>Nuget ReadMe from GitHub or Github. Build Target</Title>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <IsPackable>True</IsPackable>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PublishRepositoryUrl>True</PublishRepositoryUrl>
     <BuildOutputTargetFolder>tasks</BuildOutputTargetFolder>
     <SuppressDependenciesWhenPacking>True</SuppressDependenciesWhenPacking>
     <!-- ensures ReferenceCopyLocalPaths used in the Target-->
@@ -32,6 +34,9 @@
   <ItemGroup>
       <!-- forcing the .nupkg to be rebuilt whenever targets changed -->
       <EmbeddedResource Include="build\NugetRepoReadme.targets" Pack="true" PackagePath="build" />
+  </ItemGroup>
+  <ItemGroup>
+      	<None Include="..\README.md" Pack="true" PackagePath=""/>
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="AngleSharp" Version="1.3.0" PrivateAssets="all" />
