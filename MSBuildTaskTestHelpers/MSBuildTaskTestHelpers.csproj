@@ -7,7 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Build.Utilities.Core" Version="17.0.0" />
+    <PackageReference Include="Microsoft.Build.Utilities.Core" Version="17.14.28" />
     <PackageReference Include="Roslynator.Analyzers" Version="4.14.1">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
