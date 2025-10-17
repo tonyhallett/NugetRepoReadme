@@ -1,0 +1,80 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <LangVersion>8.0</LangVersion>
+    <Nullable>enable</Nullable>
+    <Configurations>Debug;Release;IntegrationTests</Configurations>
+  </PropertyGroup>
+  <PropertyGroup>
+    <Authors>TonyHUk</Authors>
+    <Description>Build target for creating a nuget readme from a readme with relative links hosted on GitHub or GitLab.</Description>
+    <Copyright>Copyright © 2025 Tony Hallett</Copyright>
+    <RepositoryUrl>https://github.com/tonyhallett/NugetRepoReadme.git</RepositoryUrl>
+    <PackageTags>readme;Nuget;GitHub;GitLabtarget;task;relative;links;images</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/tonyhallett/NugetRepoReadme</PackageProjectUrl>
+    <Title>Nuget ReadMe from GitHub or Github. Build Target</Title>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <IsPackable>True</IsPackable>
+    <BuildOutputTargetFolder>tasks</BuildOutputTargetFolder>
+    <SuppressDependenciesWhenPacking>True</SuppressDependenciesWhenPacking>
+    <!-- ensures ReferenceCopyLocalPaths used in the Target-->
+     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    <TargetsForTfmSpecificBuildOutput>
+        $(TargetsForTfmSpecificBuildOutput);CopyProjectReferencesToPackage
+    </TargetsForTfmSpecificBuildOutput>
+    <!-- https://learn.microsoft.com/en-us/nuget/reference/errors-and-warnings/nu5100 5128 -->
+     <NoWarn>NU5100;$(NoWarn)</NoWarn>
+     <!-- will suppress NU5128 it skips code that woulld result in the warning-->
+     <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+     <GenerateDependencyFile>true</GenerateDependencyFile>
+  </PropertyGroup>
+  <ItemGroup>
+      <!-- forcing the .nupkg to be rebuilt whenever targets changed -->
+      <EmbeddedResource Include="build\NugetRepoReadme.targets" Pack="true" PackagePath="build" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="AngleSharp" Version="1.3.0" PrivateAssets="all" />
+    <PackageReference Include="Markdig" Version="0.42.0" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.Build.Utilities.Core" Version="17.14.8" PrivateAssets="all" ExcludeAssets="Runtime" />
+    <PackageReference Include="Roslynator.Analyzers" Version="4.14.1">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Roslynator.CodeFixes" Version="4.14.1">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Roslynator.Refactorings" Version="4.14.1">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="StyleCop.Analyzers.Unstable" Version="1.2.0.556">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+        <_Parameter1>EndToEndTests</_Parameter1>
+    </AssemblyAttribute>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+        <_Parameter1>Tests</_Parameter1>
+    </AssemblyAttribute>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+        <_Parameter1>DynamicProxyGenAssembly2</_Parameter1>
+    </AssemblyAttribute>
+   </ItemGroup>
+
+   <Target Name="CopyProjectReferencesToPackage" DependsOnTargets="ResolveReferences">
+        <ItemGroup>
+            <BuildOutputInPackage Include="@(ReferenceCopyLocalPaths)" TargetPath="%(ReferenceCopyLocalPaths.DestinationSubPath)" />
+        </ItemGroup>
+    </Target>
+    <!-- This target adds the generated deps.json file to our package output -->
+    <Target Name="AddBuildDependencyFileToBuiltProjectOutputGroupOutput" BeforeTargets="BuiltProjectOutputGroup" Condition=" '$(GenerateDependencyFile)' == 'true'">
+    <ItemGroup>
+        <BuiltProjectOutputGroupOutput Include="$(ProjectDepsFilePath)" TargetPath="$(ProjectDepsFileName)" FinalOutputPath="$(ProjectDepsFilePath)" />
+    </ItemGroup>
+</Target>
+</Project>
