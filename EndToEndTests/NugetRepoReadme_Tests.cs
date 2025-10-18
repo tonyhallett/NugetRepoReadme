@@ -26,13 +26,13 @@ namespace EndToEndTests
                 => new(expected, ExpectedOutputPath: expectedOutputPath);
         }
 
-        private sealed record ProjectFileAdditional(string Properties, string RemoveReplaceItems, string Targets)
+        private sealed record ProjectFileAdditional(string Properties, string RemoveReplaceItems, string Targets, string TargetFrameworks)
         {
-            public static ProjectFileAdditional None { get; } = new ProjectFileAdditional(string.Empty, string.Empty, string.Empty);
+            public static ProjectFileAdditional None { get; } = new ProjectFileAdditional(string.Empty, string.Empty, string.Empty, string.Empty);
 
-            public static ProjectFileAdditional PropertiesOnly(string properties) => new(properties, string.Empty, string.Empty);
+            public static ProjectFileAdditional PropertiesOnly(string properties) => new(properties, string.Empty, string.Empty, string.Empty);
 
-            public static ProjectFileAdditional RemoveReplaceItemsOnly(string removeReplaceItems) => new(string.Empty, removeReplaceItems, string.Empty);
+            public static ProjectFileAdditional RemoveReplaceItemsOnly(string removeReplaceItems) => new(string.Empty, removeReplaceItems, string.Empty, string.Empty);
         }
 
         [OneTimeTearDown]
@@ -329,8 +329,17 @@ $@"<{MsBuildPropertyItemNames.ReadmeRemoveReplaceWordsItem} Include=""{removeRep
     </PropertyGroup>
 </Target>
 """;
-            var projectFileAdditional = new ProjectFileAdditional(string.Empty, string.Empty, target);
+            var projectFileAdditional = new ProjectFileAdditional(string.Empty, string.Empty, target, string.Empty);
             Test(repoReadme, generatedReadme/*, projectFileAdditional*/);
+        }
+
+        [Test]
+        public void Should_Work_With_Multi_Targeting()
+        {
+            var repoReadme = new RepoReadme("untouched");
+            var generatedReadme = new GeneratedReadme("untouched", ExpectedOutputPath: Path.Combine("obj", "Release", "ReadmeRewrite", "package-readme.md"));
+            var projectFileAdditional = new ProjectFileAdditional(string.Empty, string.Empty, string.Empty, "net472;net6.0");
+            Test(repoReadme, generatedReadme, projectFileAdditional);
         }
 
         private void Different_Output_Paths_Test(string? generatedReadmeDirectory, string expectedOutputPath)
@@ -352,10 +361,13 @@ $@"<{MsBuildPropertyItemNames.ReadmeRemoveReplaceWordsItem} Include=""{removeRep
             string baseReadmeElementOrEmptyString = repoReadme.AddProjectElement ? $"<BaseReadme>{repoReadme.RelativePath}</BaseReadme>" : string.Empty;
             string repositoryUrlElementOrEmptyString = addRepositoryUrl ? "<RepositoryUrl>https://github.com/tonyhallett/arepo.git</RepositoryUrl>" : string.Empty;
             DirectoryInfo? projectDirectory = null;
+            string targetFrameworkOrFrameworksElement = string.IsNullOrEmpty(projectFileAdditional.TargetFrameworks)
+                ? "<TargetFramework>net461</TargetFramework>"
+                : $"<TargetFrameworks>{projectFileAdditional.TargetFrameworks}</TargetFrameworks>";
             string projectWithReadMe = $"""
 <Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
-        <TargetFramework>net461</TargetFramework>
+ {targetFrameworkOrFrameworksElement}
         <Authors>TonyHUK</Authors>
         {repositoryUrlElementOrEmptyString}
         <PackageReadmeFile>{generatedReadme.PackageReadMeFileElementContents}</PackageReadmeFile>
