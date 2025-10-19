@@ -29,5 +29,7 @@ namespace Tests.Utils
         public string MissingReadmeAsset(string missingReadmeAsset) => missingReadmeAsset;
 
         public string RemoveReplaceWordsFileDoesNotExist(string filePath) => throw new NotImplementedException();
+
+        public string CannotFindGitRepository() => throw new NotImplementedException();
     }
 }

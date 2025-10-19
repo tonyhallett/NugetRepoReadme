@@ -9,6 +9,8 @@ namespace NugetRepoReadme.MSBuild
     {
         public static MessageProvider Instance { get; } = new MessageProvider();
 
+        public string CannotFindGitRepository() => "Cannot find Git repository";
+
         public string CouldNotParseRepositoryUrl(string? propertyValue)
             => $"Could not parse the repository url :{propertyValue}.  Use either {MsBuildPropertyItemNames.RepositoryUrlProperty} or {MsBuildPropertyItemNames.ReadmeRepositoryUrlProperty} to supply a GitHub or GitLab repository url.";
 

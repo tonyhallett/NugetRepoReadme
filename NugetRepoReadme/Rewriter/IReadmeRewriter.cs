@@ -8,7 +8,7 @@ namespace NugetRepoReadme.Rewriter
         ReadmeRewriterResult Rewrite(
             RewriteTagsOptions rewriteTagsOptions,
             string readme,
-            string readmeRelativePath,
+            string repoReadmeRelativePath,
             string? repoUrl,
             string @ref,
             RemoveReplaceSettings? removeReplaceSettings,

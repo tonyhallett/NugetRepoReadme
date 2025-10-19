@@ -27,5 +27,7 @@ namespace NugetRepoReadme.MSBuild
         string MissingReadmeAsset(string missingReadmeAsset);
 
         string RemoveReplaceWordsFileDoesNotExist(string filePath);
+
+        string CannotFindGitRepository();
     }
 }

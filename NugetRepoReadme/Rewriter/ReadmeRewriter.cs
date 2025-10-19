@@ -50,17 +50,17 @@ namespace NugetRepoReadme.Rewriter
         public ReadmeRewriterResult Rewrite(
             RewriteTagsOptions rewriteTagsOptions,
             string readme,
-            string readmeRelativePath,
+            string repoReadmeRelativePath,
             string? repoUrl,
             string @ref,
             RemoveReplaceSettings? removeReplaceSettings,
             IReadmeRelativeFileExists readmeRelativeFileExists)
         {
-            RepoPaths? repoPaths = repoUrl != null ? RepoPaths.Create(repoUrl, @ref, readmeRelativePath) : null;
+            RepoPaths? repoPaths = repoUrl != null ? RepoPaths.Create(repoUrl, @ref, repoReadmeRelativePath) : null;
 
             if (removeReplaceSettings != null)
             {
-                ApplyRepoReadmeReplacementText(removeReplaceSettings.RemovalsOrReplacements, repoPaths, readmeRelativePath);
+                ApplyRepoReadmeReplacementText(removeReplaceSettings.RemovalsOrReplacements, repoPaths, repoReadmeRelativePath);
                 readme = _removeReplacer.RemoveReplace(readme, removeReplaceSettings);
             }
 

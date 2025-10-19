@@ -8,8 +8,14 @@ namespace EndToEndTests
     {
         private const string DefaultPackageReadmeFileElementContents = "package-readme.md";
         private readonly NugetBuildTargetsTestSetup _nugetBuildTargetsTestSetup = new();
+        private readonly NugetBuildTargetsTestSetupBuilder _nugetBuildTargetsTestSetupBuilder = new();
 
-        private sealed record RepoReadme(string Readme, string RelativePath = "readme.md", bool AddProjectElement = true, bool AddReadme = true);
+        private sealed record RepoReadme(
+            string Readme,
+            string BaseReadmeRelativePath = "readme.md",
+            string ProjectContainingDirectoryRelativePath = "readme.md",
+            bool AddProjectElement = true,
+            bool AddReadme = true);
 
         private sealed record GeneratedReadme(
             string Expected,
@@ -36,7 +42,11 @@ namespace EndToEndTests
         }
 
         [OneTimeTearDown]
-        public void TearDown() => _nugetBuildTargetsTestSetup.TearDown();
+        public void TearDown()
+        {
+            _nugetBuildTargetsTestSetup.TearDown();
+            _nugetBuildTargetsTestSetupBuilder.TearDown();
+        }
 
         [Test]
         public void Should_Have_Correct_ReadMe_In_Generated_NuPkg()
@@ -55,10 +65,10 @@ After
 ";
 
             Test(
-                new RepoReadme(relativeReadme, "readmedir/readme.md"),
+                new RepoReadme(relativeReadme, "readmedir/readme.md", "readmedir/readme.md"),
                 GeneratedReadme.Simple(expectedNuGetReadme),
                 null,
-                addRelativeFile => addRelativeFile("images/image.png", string.Empty));
+                [(string.Empty, "images/image.png")]);
         }
 
         [Test]
@@ -85,7 +95,10 @@ This will be replaced
 Before
 {replacement}";
 
-            Test(new RepoReadme(repoReadme), GeneratedReadme.Simple(expectedNuGetReadme), ProjectFileAdditional.RemoveReplaceItemsOnly(removeReplaceItems));
+            Test(
+                new RepoReadme(repoReadme),
+                GeneratedReadme.Simple(expectedNuGetReadme),
+                ProjectFileAdditional.RemoveReplaceItemsOnly(removeReplaceItems));
 
         }
 
@@ -112,7 +125,11 @@ This will be replaced
 Before
 {replacement}";
 
-            Test(new RepoReadme(relativeReadme), GeneratedReadme.Simple(expectedNuGetReadme), ProjectFileAdditional.RemoveReplaceItemsOnly(removeReplaceItems), addRelativeFile => addRelativeFile("relative.text", replacement));
+            Test(
+                new RepoReadme(relativeReadme),
+                GeneratedReadme.Simple(expectedNuGetReadme),
+                ProjectFileAdditional.RemoveReplaceItemsOnly(removeReplaceItems),
+                [("relative.text", replacement)]);
         }
 
         [Test]
@@ -139,7 +156,10 @@ Before
 Replacement
 After";
 
-            Test(new RepoReadme(repoReadme), GeneratedReadme.Simple(expectedNuGetReadme), ProjectFileAdditional.RemoveReplaceItemsOnly(removeReplaceItems));
+            Test(
+                new RepoReadme(repoReadme),
+                GeneratedReadme.Simple(expectedNuGetReadme),
+                ProjectFileAdditional.RemoveReplaceItemsOnly(removeReplaceItems));
 
         }
 
@@ -160,7 +180,7 @@ After";
             Func<string, string, string> getExpectedAbsoluteImageUrl,
             Func<string, string, string> getExpectedAbsoluteLinkUrl)
         {
-            const string additionalProperties = "<PublishRepositoryUrl>True</PublishRepositoryUrl>";
+            const string publishRepositoryUrlProperty = "<PublishRepositoryUrl>True</PublishRepositoryUrl>";
 
             const string commitId = "f5eb304528a94c667be2ab0f921b3995746c7ce8";
             string gitConfig = $"""
@@ -185,20 +205,20 @@ After";
 ![image]({getExpectedAbsoluteImageUrl(relativeImageUrl, commitId)})
 
 [link]({getExpectedAbsoluteLinkUrl(relativeLinkUrl, commitId)})";
+
             Test(
                 new RepoReadme(repoReadme),
                 GeneratedReadme.Simple(expectedNuGetReadme),
-                projectFileAdditional: ProjectFileAdditional.PropertiesOnly(additionalProperties),
-                addRelativeFileCallback: addRelativeFile =>
-                {
-                    addRelativeFile("images/image.png", string.Empty);
-                    addRelativeFile("some/page.html", string.Empty);
-
-                    addRelativeFile(".git/config", gitConfig);
-                    addRelativeFile(".git/HEAD", headContent);
-                    addRelativeFile($".git/{headBranchPath}", commitId);
-                },
-                addRepositoryUrl: false);
+                projectFileAdditional: ProjectFileAdditional.PropertiesOnly(publishRepositoryUrlProperty),
+                additionalFiles: [
+                    (string.Empty, "images/image.png"),
+                    (string.Empty, "some/page.html"),
+                    (gitConfig, ".git/config"),
+                    (headContent, ".git/HEAD"),
+                    (commitId, $".git/{headBranchPath}")
+                ],
+                addRepositoryUrl: false,
+                addGit: false);
         }
 
         [Test]
@@ -251,24 +271,12 @@ After";
         {
             var repoReadme = new RepoReadme("<div>Some html</div>");
             var generatedReadme = GeneratedReadme.Simple("<div>Some html</div>");
-            bool hasThrown = false;
-            try
-            {
-                Test(repoReadme, generatedReadme, ProjectFileAdditional.PropertiesOnly("<ErrorOnHtml>true</ErrorOnHtml>"));
-            }
-            catch (DotNetCommandException ex)
-            {
-                hasThrown = true;
-                Assert.Multiple(() =>
-                {
-                    Assert.That(ex.Command, Is.EqualTo("build"));
-                    Assert.That(ex.ToString(), Contains.Substring("Readme has unsupported HTML"));
-                });
-            }
-            finally
-            {
-                Assert.That(hasThrown, Is.True);
-            }
+
+            Test(
+                repoReadme,
+                generatedReadme,
+                ProjectFileAdditional.PropertiesOnly("<ErrorOnHtml>true</ErrorOnHtml>"),
+                failureAssertion: processResult => Assert.That(processResult.Output, Contains.Substring("Readme has unsupported HTML")));
         }
 
         [Test]
@@ -295,7 +303,7 @@ $@"<{MsBuildPropertyItemNames.ReadmeRemoveReplaceWordsItem} Include=""{removeRep
                 repoReadme,
                 generatedReadme,
                 projectFileAdditional,
-                addRelativeFile => addRelativeFile(removeReplaceFileName, removeReplaceFileContents));
+                [(removeReplaceFileContents, removeReplaceFileName)]);
         }
 
         [Test]
@@ -314,14 +322,14 @@ $@"<{MsBuildPropertyItemNames.ReadmeRemoveReplaceWordsItem} Include=""{removeRep
                 repoReadme,
                 generatedReadme,
                 projectFileAdditional,
-                addRelativeFile => addRelativeFile(removeReplaceFileName, removeReplaceFileContents));
+                [(removeReplaceFileContents, removeReplaceFileName)]);
         }
 
         [Test]
         public void Should_Be_Transformable_With_TransformNugetReadme_Target_And_NugetReadmeContent_Property()
         {
             var repoReadme = new RepoReadme("uppercasethis");
-            var generatedReadme = GeneratedReadme.Simple("uppercasethis");
+            var generatedReadme = GeneratedReadme.Simple("UPPERCASETHIS");
             const string target = """
 <Target Name="TransformNugetReadme">
     <PropertyGroup>
@@ -329,8 +337,9 @@ $@"<{MsBuildPropertyItemNames.ReadmeRemoveReplaceWordsItem} Include=""{removeRep
     </PropertyGroup>
 </Target>
 """;
-            var projectFileAdditional = new ProjectFileAdditional(string.Empty, string.Empty, target, string.Empty);
-            Test(repoReadme, generatedReadme/*, projectFileAdditional*/);
+            string writeNugetReadmeDependsOnProperty = "<WriteNugetReadmeDependsOn>TransformNugetReadme</WriteNugetReadmeDependsOn>";
+            var projectFileAdditional = new ProjectFileAdditional(writeNugetReadmeDependsOnProperty, string.Empty, target, string.Empty);
+            Test(repoReadme, generatedReadme, projectFileAdditional);
         }
 
         [Test]
@@ -342,6 +351,25 @@ $@"<{MsBuildPropertyItemNames.ReadmeRemoveReplaceWordsItem} Include=""{removeRep
             Test(repoReadme, generatedReadme, projectFileAdditional);
         }
 
+        [TestCase(true)]
+        [TestCase(false)]
+        public void Should_Work_With_BaseReadme_Outside_Project_Directory(bool repoRelative)
+        {
+            string repoRelativeOrReadmeRelativePrefix = repoRelative ? "/" : string.Empty;
+            var repoReadme = new RepoReadme($"[relative]({repoRelativeOrReadmeRelativePrefix}relative.txt)", "../readme.md", "readme.md");
+            var generatedReadme = GeneratedReadme.Simple("[relative](https://github.com/tonyhallett/arepo/blob/master/relative.txt)");
+
+            string solutionStyleProject = "DependentProject/dependentProject.csproj";
+
+            Test(
+                repoReadme,
+                generatedReadme,
+                additionalFiles: [
+                    (string.Empty, "relative.txt"),
+                ],
+                projectRelativePath: solutionStyleProject);
+        }
+
         private void Different_Output_Paths_Test(string? generatedReadmeDirectory, string expectedOutputPath)
         {
             var repoReadme = new RepoReadme("untouched");
@@ -351,16 +379,19 @@ $@"<{MsBuildPropertyItemNames.ReadmeRemoveReplaceWordsItem} Include=""{removeRep
         }
 
         private void Test(
-            RepoReadme repoReadme,
-            GeneratedReadme generatedReadme,
-            ProjectFileAdditional? projectFileAdditional = null,
-            Action<Action<string, string>>? addRelativeFileCallback = null,
-            bool addRepositoryUrl = true)
+    RepoReadme repoReadme,
+    GeneratedReadme generatedReadme,
+    ProjectFileAdditional? projectFileAdditional = null,
+    IEnumerable<(string Contents, string RelativePath)>? additionalFiles = null,
+    bool addRepositoryUrl = true,
+    bool addGit = true,
+    string projectRelativePath = "dependentProject.csproj",
+    Action<ProcessResult> failureAssertion = null
+    )
         {
             projectFileAdditional ??= ProjectFileAdditional.None;
-            string baseReadmeElementOrEmptyString = repoReadme.AddProjectElement ? $"<BaseReadme>{repoReadme.RelativePath}</BaseReadme>" : string.Empty;
+            string baseReadmeElementOrEmptyString = repoReadme.AddProjectElement ? $"<BaseReadme>{repoReadme.BaseReadmeRelativePath}</BaseReadme>" : string.Empty;
             string repositoryUrlElementOrEmptyString = addRepositoryUrl ? "<RepositoryUrl>https://github.com/tonyhallett/arepo.git</RepositoryUrl>" : string.Empty;
-            DirectoryInfo? projectDirectory = null;
             string targetFrameworkOrFrameworksElement = string.IsNullOrEmpty(projectFileAdditional.TargetFrameworks)
                 ? "<TargetFramework>net461</TargetFramework>"
                 : $"<TargetFrameworks>{projectFileAdditional.TargetFrameworks}</TargetFrameworks>";
@@ -383,35 +414,55 @@ $@"<{MsBuildPropertyItemNames.ReadmeRemoveReplaceWordsItem} Include=""{removeRep
 {projectFileAdditional.Targets}
 </Project>
 """;
-
-            string nuPkgPath = NupkgProvider.GetNuPkgPath();
-            _ = _nugetBuildTargetsTestSetup.Setup(
-                projectWithReadMe,
-                nuPkgPath,
-                (projectPath) =>
-                {
-                    projectDirectory = new DirectoryInfo(Path.GetDirectoryName(projectPath)!);
-                    void CreateRelativeFile(string relativeFile, string contents) => FileHelper.WriteAllTextEnsureDirectory(Path.Combine(projectDirectory.FullName, relativeFile), contents);
-                    if (repoReadme.AddReadme)
-                    {
-                        CreateRelativeFile(repoReadme.RelativePath, repoReadme.Readme);
-                    }
-
-                    addRelativeFileCallback?.Invoke(CreateRelativeFile);
-                });
-
-            if (projectDirectory == null)
+            List<(string Contents, string RelativePath)> files = additionalFiles == null ? [] : [.. additionalFiles];
+            if (repoReadme.AddReadme)
             {
-                throw new Exception("Project directory not set");
+                files.Add((repoReadme.Readme, repoReadme.ProjectContainingDirectoryRelativePath));
             }
 
-            string dependentNuGetReadMe = NupkgReadmeReader.Read(projectDirectory, generatedReadme.ZipEntryName);
+            if (addGit)
+            {
+                files.Add(("ref: refs/heads/main", ".git/HEAD"));
+            }
+
+            string nuPkgPath = NupkgProvider.GetNuPkgPath();
+
+            IBuildResult buildResult = _nugetBuildTargetsTestSetupBuilder
+                .CreateProject()
+                .AddFiles(files)
+                .AddProject(projectWithReadMe, projectRelativePath)
+                .AddNuPkg(nuPkgPath)
+                .DotNetBuildProject("-c Release -bl");
+
+            bool buildFailed = buildResult.ProcessResult.ExitCode != 0;
+
+            if (buildFailed)
+            {
+                if (failureAssertion != null)
+                {
+                    failureAssertion(buildResult.ProcessResult);
+                    return;
+                }
+                else
+                {
+                    Assert.Fail(buildResult.ProcessResult.Output + "\n" + buildResult.ProcessResult.Error);
+                }
+            }
+            else
+            {
+                if (failureAssertion != null)
+                {
+                    Assert.Fail("Expected failure but no failure");
+                }
+            }
+
+            string dependentNuGetReadMe = NupkgReadmeReader.Read(buildResult.ProjectDirectory, generatedReadme.ZipEntryName);
 
             Assert.That(dependentNuGetReadMe, Is.EqualTo(generatedReadme.Expected));
 
             string expectedOutputPath = Path.IsPathRooted(generatedReadme.ExpectedOutputPath)
                 ? generatedReadme.ExpectedOutputPath
-                : Path.Combine(projectDirectory.FullName, generatedReadme.ExpectedOutputPath);
+                : Path.Combine(buildResult.ProjectDirectory.FullName, generatedReadme.ExpectedOutputPath);
             Assert.That(File.Exists(expectedOutputPath), Is.True, $"Expected generated path {expectedOutputPath} to exist");
         }
     }

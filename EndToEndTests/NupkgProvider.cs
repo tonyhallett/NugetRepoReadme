@@ -1,4 +1,6 @@
 using System.Reflection;
+using NuGet.Versioning;
+using NugetBuildTargetsIntegrationTesting;
 using NugetRepoReadme;
 
 namespace EndToEndTests
@@ -12,7 +14,33 @@ namespace EndToEndTests
             DirectoryInfo projectDirectory = GetProjectDirectory();
             string debugOrRelease = IsDebug.Value() ? "Debug" : "Release";
             DirectoryInfo debugOrReleaseDirectory = projectDirectory.GetDescendantDirectory("bin", debugOrRelease);
-            return debugOrReleaseDirectory.GetFiles($"{NugetRepoReadme}*.nupkg", SearchOption.AllDirectories).First().FullName;
+            FileInfo[] nupkgFiles = debugOrReleaseDirectory.GetFiles($"{NugetRepoReadme}*.nupkg", SearchOption.AllDirectories);
+            return GetLatestVersion(nupkgFiles);
+        }
+
+        private static string GetLatestVersion(FileInfo[] nupkgFiles)
+        {
+            if (nupkgFiles.Length == 0)
+            {
+                throw new Exception("No nupkg files");
+            }
+
+            NuGetVersion? latestVersion = null;
+            string? latestNuPkgPath = null;
+            foreach (FileInfo nupkgFile in nupkgFiles)
+            {
+                string nuPkgPath = nupkgFile.FullName;
+                (string PackageId, string Version) packageIdVersion = NuPkgHelper.GetPackageIdAndVersionFromNupkgPath(nuPkgPath);
+                NuGetVersion version = new(packageIdVersion.Version);
+
+                if (latestNuPkgPath == null || (latestVersion!.CompareTo(version) < 0))
+                {
+                    latestNuPkgPath = nuPkgPath;
+                    latestVersion = version;
+                }
+            }
+
+            return latestNuPkgPath!;
         }
 
         private static DirectoryInfo GetSolutionDirectory()

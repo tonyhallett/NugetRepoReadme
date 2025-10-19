@@ -15,8 +15,10 @@
 		<BeforePack Condition="'$(BeforePack)' == ''">BeforePackHook_NugetRepoReadme</BeforePack>
 	</PropertyGroup>
 	<!-- or instead _GetPackageFiles -->
-	
-	
+
+	<PropertyGroup>
+		<WriteNugetReadmeDependsOn>_InitializeNuspecRepositoryInformationProperties;ReadmeRewrite_ForPack;$(WriteNugetReadmeDependsOn)</WriteNugetReadmeDependsOn>
+	</PropertyGroup>
 	<Target Name="ReadmeRewrite_ForPack">
 
 		<!-- Require the caller to set PackageReadmeFile (relative to project directory) -->
@@ -64,10 +66,9 @@
 		</ReadmeRewriterTask>
 
 	</Target>
-	<Target Name="TransformNugetReadme"></Target>
 	<Target Name="WriteNugetReadme"
 			BeforeTargets="$(BeforePack)"
-			DependsOnTargets="_InitializeNuspecRepositoryInformationProperties;ReadmeRewrite_ForPack;TransformNugetReadme"
+			DependsOnTargets="$(WriteNugetReadmeDependsOn)"
 			Condition="'$(IsPackable)' != 'false'"
           >
 		<ReadmeWriterTask OutputReadme="$(_OutputReadmeAbsolute)"

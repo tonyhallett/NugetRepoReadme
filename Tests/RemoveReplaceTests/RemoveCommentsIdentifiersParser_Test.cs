@@ -14,6 +14,8 @@ namespace Tests.RemoveReplaceTests
             public const string FormatError = "formaterror";
             public const string SameStartEndError = "samestartenderror";
 
+            public string CannotFindGitRepository() => throw new NotImplementedException();
+
             public string CouldNotParseRepositoryUrl(string? url) => throw new NotImplementedException();
 
             public string CouldNotParseRewriteTagsOptionsUsingDefault(string propertyValue, RewriteTagsOptions defaultRewriteTagsOptions)

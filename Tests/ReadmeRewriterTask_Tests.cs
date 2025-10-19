@@ -6,6 +6,7 @@ using NugetRepoReadme.IOWrapper;
 using NugetRepoReadme.MSBuild;
 using NugetRepoReadme.Processing;
 using NugetRepoReadme.RemoveReplace.Settings;
+using NugetRepoReadme.Repo;
 using NugetRepoReadme.Rewriter;
 using Tests.Utils;
 
@@ -21,6 +22,7 @@ namespace Tests
         private Mock<IRemoveReplaceSettingsProvider> _mockRemoveReplaceSettingsProvider = new();
         private Mock<IReadmeRewriter> _mockReadmeRewriter = new();
         private DummyLogBuildEngine _dummyLogBuildEngine = new();
+        private DummyRepoRelativeReadmePath _dummyDummyRepoRelativeReadmePath = new();
         private ReadmeRewriterTask _readmeRewriterTask = new();
         private TestRemoveReplaceSettingsResult _removeReplaceSettingsResult = new();
 
@@ -52,6 +54,11 @@ namespace Tests
             public string[] ReadAllLines(string filePath) => throw new NotImplementedException();
         }
 
+        private sealed class DummyRepoRelativeReadmePath : IRepoRelativeReadmePath
+        {
+            public string? GetRelativeReadmePath(string readmePath) => $"relative-{readmePath}";
+        }
+
         [SetUp]
         public void Setup()
         {
@@ -59,6 +66,7 @@ namespace Tests
             _mockRemoveReplaceSettingsProvider = new Mock<IRemoveReplaceSettingsProvider>();
             _mockReadmeRewriter = new Mock<IReadmeRewriter>();
             _dummyLogBuildEngine = new DummyLogBuildEngine();
+            _dummyDummyRepoRelativeReadmePath = new DummyRepoRelativeReadmePath();
             _readmeRewriterTask = new ReadmeRewriterTask
             {
                 BuildEngine = _dummyLogBuildEngine,
@@ -68,6 +76,7 @@ namespace Tests
                 MessageProvider = new ConcatenatingArgumentsMessageProvider(),
                 RepositoryUrl = RepositoryUrl,
                 ProjectDirectoryPath = ProjectDirectoryPath,
+                RepoRelativeReadmePath = _dummyDummyRepoRelativeReadmePath,
             };
             _removeReplaceSettingsResult = new TestRemoveReplaceSettingsResult();
             _ = _mockRemoveReplaceSettingsProvider.Setup(removeReplaceSettingsProvider => removeReplaceSettingsProvider.Provide(_removeReplaceTaskItems, null, RemoveCommentIdentifiers))
@@ -100,22 +109,23 @@ namespace Tests
             string? readmeRelativePath,
             string expectedReadmeRelativePath)
         {
+            string expectedRepoReadmeRelativePath = GetExpectedRepoReadmeRelativePath(expectedReadmeRelativePath);
             SetupReadMeRewriter(
                 new ReadmeRewriterResult(null, [], [], false, false),
                 RewriteTagsOptions.None,
                 readmeRelativePath,
-                expectedReadmeRelativePath);
+                expectedRepoReadmeRelativePath);
 
             _ = ExecuteReadmeExists();
 
             _mockReadmeRewriter.Verify(readmeRewriter => readmeRewriter.Rewrite(
                 It.IsAny<RewriteTagsOptions>(),
                 DummyIOHelper.ReadmeText,
-                expectedReadmeRelativePath,
+                expectedRepoReadmeRelativePath,
                 RepositoryUrl,
                 It.IsAny<string>(),
                 _removeReplaceSettingsResult.Settings,
-                It.Is<ReadmeRelativeFileExists>(readmeRelativeFileExists => readmeRelativeFileExists.ReadmeRelativePath == expectedReadmeRelativePath && readmeRelativeFileExists.ProjectDirectoryPath == ProjectDirectoryPath)));
+                It.Is<ReadmeRelativeFileExists>(readmeRelativeFileExists => readmeRelativeFileExists.ReadmeRelativePath == $"projectdir;{expectedReadmeRelativePath}" && readmeRelativeFileExists.ProjectDirectoryPath == ProjectDirectoryPath)));
         }
 
         [Test]
@@ -157,20 +167,22 @@ namespace Tests
             ReadmeRewriterResult readmeRewriterResult,
             RewriteTagsOptions rewriteTagsOptions = RewriteTagsOptions.None,
             string? readmeRelativePath = null,
-            string? expectedReadmeRelativePath = null,
+            string? expectedRepoReadmeRelativePath = null,
             string? expectedRepositoryUrl = null)
         {
             _readmeRewriterTask.ReadmeRelativePath = readmeRelativePath;
             _ = _mockReadmeRewriter.Setup(readmeRewriter => readmeRewriter.Rewrite(
                 rewriteTagsOptions,
                 DummyIOHelper.ReadmeText,
-                expectedReadmeRelativePath ?? "readme.md",
+                expectedRepoReadmeRelativePath ?? GetExpectedRepoReadmeRelativePath("readme.md"),
                 expectedRepositoryUrl ?? RepositoryUrl,
                 It.IsAny<string>(),
                 _removeReplaceSettingsResult.Settings,
                 It.IsAny<IReadmeRelativeFileExists>()))
             .Returns(readmeRewriterResult);
         }
+
+        private static string GetExpectedRepoReadmeRelativePath(string readmeRelativePath) => $"relative-projectdir;{readmeRelativePath}";
 
         [Test]
         public void Should_Log_Error_When_RepositoryUrl_Cannot_Be_Parsed()

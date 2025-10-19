@@ -10,7 +10,21 @@ First target - TransformNugetReadme
 4. Has behaviour settings for handling HTML in the README file.
 5. Outputs MSBuild property NugetReadmeContent
 
-Second target ( runs after target TransformNugetReadme - create this target if you want to transform the readme further )
+Second target - WriteNugetReadme
+
+This target depends on TransformNugetReadme via the property WriteNugetReadmeDependsOn.
+If you wish to transform the readme contents from TransformNugetReadme then add your target to WriteNugetReadmeDependsOn and use NugetReadmeContent.
+```xml
+<PropertyGroup>
+  <WriteNugetReadmeDependsOn>TransformNugetReadme</WriteNugetReadmeDependsOn>
+</PropertyGroup>
+<Target Name="TransformNugetReadme">
+    <PropertyGroup>
+        <NugetReadmeContent>$(NugetReadmeContent.ToUpper())</NugetReadmeContent>
+    </PropertyGroup>
+</Target>
+
+```
 
 1. Writes NugetReadmeContent to file and packs the readme, so you [do not need to](https://learn.microsoft.com/en-us/nuget/reference/errors-and-warnings/nu5039)
 

@@ -24,6 +24,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MSBuildTaskTestHelpers", "M
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NugetTests", "NugetTests\NugetTests.csproj", "{6B81FA69-71DB-4EA8-BA8D-49B51BF39A58}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NugetBuildTargetsIntegrationTesting", "..\NugetBuildTargetsIntegrationTesting\NugetBuildTargetsIntegrationTesting\NugetBuildTargetsIntegrationTesting.csproj", "{985F1ACE-779B-F13C-4844-0B7031D14474}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -61,6 +63,12 @@ Global
 		{6B81FA69-71DB-4EA8-BA8D-49B51BF39A58}.IntegrationTests|Any CPU.Build.0 = Debug|Any CPU
 		{6B81FA69-71DB-4EA8-BA8D-49B51BF39A58}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6B81FA69-71DB-4EA8-BA8D-49B51BF39A58}.Release|Any CPU.Build.0 = Release|Any CPU
+		{985F1ACE-779B-F13C-4844-0B7031D14474}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{985F1ACE-779B-F13C-4844-0B7031D14474}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{985F1ACE-779B-F13C-4844-0B7031D14474}.IntegrationTests|Any CPU.ActiveCfg = Debug|Any CPU
+		{985F1ACE-779B-F13C-4844-0B7031D14474}.IntegrationTests|Any CPU.Build.0 = Debug|Any CPU
+		{985F1ACE-779B-F13C-4844-0B7031D14474}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{985F1ACE-779B-F13C-4844-0B7031D14474}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
