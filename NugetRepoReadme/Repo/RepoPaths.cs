@@ -46,7 +46,10 @@ namespace NugetRepoReadme.Repo
                     string project = parts[parts.Length - 1];
                     System.Collections.Generic.IEnumerable<string> namespaceParts = parts.Take(parts.Length - 1);
                     string namespaceProject = string.Join("/", namespaceParts) + "/" + project;
-                    return new RepoPaths(GetGitLabBasePath(namespaceProject, true, @ref), GetGitLabBasePath(namespaceProject, false, @ref), readmeRelativePath);
+                    return new RepoPaths(
+                        GetGitLabBasePath(namespaceProject, true, @ref),
+                        GetGitLabBasePath(namespaceProject, false, @ref),
+                        readmeRelativePath);
                 }
             }
 

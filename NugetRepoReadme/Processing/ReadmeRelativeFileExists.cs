@@ -1,18 +1,18 @@
 ﻿using System.IO;
+using NugetRepoReadme.Repo;
 
 namespace NugetRepoReadme.Processing
 {
     internal class ReadmeRelativeFileExists : IReadmeRelativeFileExists
     {
-        public string ProjectDirectoryPath { get; }
+        public string RepoDirectoryPath { get; }
 
-        public string ReadmeRelativePath { get; }
+        public string ReadmeDirectoryPath { get; }
 
-        public ReadmeRelativeFileExists(string projectDirectoryPath, string readmeRelativePath)
+        public ReadmeRelativeFileExists(string repoDirectoryPath, string readmeDirectoryPath)
         {
-            readmeRelativePath = NormalizeDirectorySeparators(readmeRelativePath);
-            ProjectDirectoryPath = projectDirectoryPath;
-            ReadmeRelativePath = readmeRelativePath;
+            RepoDirectoryPath = repoDirectoryPath;
+            ReadmeDirectoryPath = readmeDirectoryPath;
         }
 
         public bool Exists(string relativePath) => File.Exists(GetPath(relativePath));
@@ -21,19 +21,8 @@ namespace NugetRepoReadme.Processing
                 .Replace('/', Path.DirectorySeparatorChar)
                 .Replace('\\', Path.DirectorySeparatorChar);
 
-        private string GetPath(string relativePath)
-        {
-            relativePath = NormalizeDirectorySeparators(relativePath);
-
-            // repo relative
-            if (relativePath.StartsWith(Path.DirectorySeparatorChar.ToString()))
-            {
-                return Path.Combine(ProjectDirectoryPath, relativePath.TrimStart(Path.DirectorySeparatorChar));
-            }
-
-            string readmeFullPath = Path.Combine(ProjectDirectoryPath, ReadmeRelativePath);
-            string readmeDirectory = Path.GetDirectoryName(readmeFullPath)!;
-            return Path.Combine(readmeDirectory, relativePath);
-        }
+        private string GetPath(string relativePath) => RepoRelative.RelativePathIsRepoRelative(relativePath)
+                ? Path.Combine(RepoDirectoryPath, relativePath.TrimStart(RepoRelative.Char))
+                : Path.Combine(ReadmeDirectoryPath, NormalizeDirectorySeparators(relativePath));
     }
 }

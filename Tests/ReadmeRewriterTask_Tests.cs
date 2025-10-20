@@ -54,9 +54,12 @@ namespace Tests
             public string[] ReadAllLines(string filePath) => throw new NotImplementedException();
         }
 
-        private sealed class DummyRepoRelativeReadmePath : IRepoRelativeReadmePath
+        private sealed class DummyRepoRelativeReadmePath : IRepoReadmeFilePathsProvider
         {
-            public string? GetRelativeReadmePath(string readmePath) => $"relative-{readmePath}";
+            public RepoReadmeFilePaths? GetRelativeReadmePath(string readmePath) => new(
+                    "repoDirectoryPath",
+                    "readmeDirectoryPath",
+                    $"relative-{readmePath}");
         }
 
         [SetUp]
@@ -125,7 +128,7 @@ namespace Tests
                 RepositoryUrl,
                 It.IsAny<string>(),
                 _removeReplaceSettingsResult.Settings,
-                It.Is<ReadmeRelativeFileExists>(readmeRelativeFileExists => readmeRelativeFileExists.ReadmeRelativePath == $"projectdir;{expectedReadmeRelativePath}" && readmeRelativeFileExists.ProjectDirectoryPath == ProjectDirectoryPath)));
+                It.Is<ReadmeRelativeFileExists>(readmeRelativeFileExists => readmeRelativeFileExists.RepoDirectoryPath == "repoDirectoryPath" && readmeRelativeFileExists.ReadmeDirectoryPath == "readmeDirectoryPath")));
         }
 
         [Test]
@@ -418,7 +421,6 @@ namespace Tests
             .Returns(new ReadmeRewriterResult(null, [], [], false, false));
 
             _ = ExecuteReadmeExists();
-
         }
     }
 }

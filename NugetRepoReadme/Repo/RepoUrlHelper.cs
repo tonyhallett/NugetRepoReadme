@@ -20,20 +20,12 @@ namespace NugetRepoReadme.Repo
 
             string urlWithoutPath = isImage ? repoPaths.ImageBasePath : repoPaths.LinkBasePath;
 
-            // repo relative
-            if (url.StartsWith("/"))
+            if (RepoRelative.RelativePathIsRepoRelative(url))
             {
                 return $"{urlWithoutPath}{url}";
             }
 
-            // readme directory relative
-            string readmeRelativePath = repoPaths.ReadmeRelativePath;
-            if (!readmeRelativePath.StartsWith("/"))
-            {
-                readmeRelativePath = "/" + readmeRelativePath;
-            }
-
-            var readmeUri = new Uri(urlWithoutPath + readmeRelativePath);
+            var readmeUri = new Uri(urlWithoutPath + repoPaths.ReadmeRelativePath);
             return new Uri(readmeUri, url).OriginalString;
         }
 

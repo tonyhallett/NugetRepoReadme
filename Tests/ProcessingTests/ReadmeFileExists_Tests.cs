@@ -4,55 +4,75 @@ namespace Tests.ProcessingTests
 {
     internal sealed class ReadmeFileExists_Tests
     {
-        private DirectoryInfo? _tempProjectDirectory;
+        private DirectoryInfo? _tempRepoDirectory;
+        private string _repoDirectoryPath = string.Empty;
+        private string _readmeDirectoryPath = string.Empty;
+        private ReadmeRelativeFileExists _readmeRelativeFileExists = new(string.Empty, string.Empty);
 
         [SetUp]
-        public void Setup() => _tempProjectDirectory = Directory.CreateTempSubdirectory();
+        public void Setup()
+        {
+            _tempRepoDirectory = Directory.CreateTempSubdirectory();
+            _repoDirectoryPath = _tempRepoDirectory!.FullName;
+        }
 
-        private ReadmeRelativeFileExists Initialize(string readmeRelativePath) => new(
-                _tempProjectDirectory!.FullName,
-                readmeRelativePath);
+        private void Create(params string[] repoRelativeReadmeDirectories)
+        {
+            var parts = new List<string>(repoRelativeReadmeDirectories);
+            parts.Insert(0, _repoDirectoryPath);
+            _readmeDirectoryPath = Path.Combine(parts.ToArray());
+            _readmeRelativeFileExists = new ReadmeRelativeFileExists(_repoDirectoryPath, _readmeDirectoryPath);
+        }
 
         [TestCase(true)]
         [TestCase(false)]
         public void Should_Work_Relative_To_Repo_Root(bool exists)
         {
-            ReadmeRelativeFileExists readmeRelativeFileExists = Initialize("readmedir/readme.md");
-            string filePath = Path.Combine(_tempProjectDirectory!.FullName, "file.txt");
+            Create("readmedir");
+            string repoRelativeFilePath = Path.Combine(_repoDirectoryPath, "file.txt");
+            string readmeRelativeFilePath = Path.Combine(_readmeDirectoryPath, "file.txt");
+
             if (exists)
             {
-                File.WriteAllText(filePath, "test");
+                File.WriteAllText(repoRelativeFilePath, "test");
+            }
+            else
+            {
+                // test that it does not look in the readme directory
+                _ = Directory.CreateDirectory(_readmeDirectoryPath);
+                File.WriteAllText(readmeRelativeFilePath, "test");
             }
 
-            Assert.That(readmeRelativeFileExists.Exists("/file.txt"), Is.EqualTo(exists));
+            Assert.That(_readmeRelativeFileExists.Exists("/file.txt"), Is.EqualTo(exists));
         }
 
         [TestCase("./")]
         [TestCase("")]
         public void Should_Work_Relative_To_Readme(string prefix)
         {
-            ReadmeRelativeFileExists readmeRelativeFileExists = Initialize("readmedir/readme.md");
-            string readmeDirectoryPath = Path.Combine(_tempProjectDirectory!.FullName, "readmedir");
-            _ = Directory.CreateDirectory(readmeDirectoryPath);
-            string filePath = Path.Combine(readmeDirectoryPath, "file.txt");
+            Create("readmedir");
+            _ = Directory.CreateDirectory(_readmeDirectoryPath);
+
+            string filePath = Path.Combine(_readmeDirectoryPath, "file.txt");
             File.WriteAllText(filePath, "test");
 
-            Assert.That(readmeRelativeFileExists.Exists($"{prefix}file.txt"), Is.True);
+            Assert.That(_readmeRelativeFileExists.Exists($"{prefix}file.txt"), Is.True);
         }
 
         [Test]
         public void Should_Work_Relative_To_Readme_Parent()
         {
-            ReadmeRelativeFileExists readmeRelativeFileExists = Initialize("parent/readmedir/readme.md");
-            string parentDirectoryPath = Path.Combine(_tempProjectDirectory!.FullName, "parent");
+            Create("parent", "readmedir");
+
+            string parentDirectoryPath = Path.Combine(_repoDirectoryPath, "parent");
             _ = Directory.CreateDirectory(parentDirectoryPath);
             string filePath = Path.Combine(parentDirectoryPath, "file.txt");
             File.WriteAllText(filePath, "test");
 
-            Assert.That(readmeRelativeFileExists.Exists("../file.txt"), Is.True);
+            Assert.That(_readmeRelativeFileExists.Exists("../file.txt"), Is.True);
         }
 
         [TearDown]
-        public void Teardown() => _tempProjectDirectory!.Delete(true);
+        public void Teardown() => _tempRepoDirectory!.Delete(true);
     }
 }

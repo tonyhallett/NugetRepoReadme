@@ -1,6 +1,6 @@
 using System.Reflection;
 using NuGet.Versioning;
-using NugetBuildTargetsIntegrationTesting;
+using NugetBuildTargetsIntegrationTesting.Nuget;
 using NugetRepoReadme;
 
 namespace EndToEndTests

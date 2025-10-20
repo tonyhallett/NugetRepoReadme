@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Diagnostics;
-using System.IO;
-using System.Text;
 using Microsoft.Build.Framework;
 using NugetRepoReadme.IOWrapper;
 using NugetRepoReadme.MSBuild;
@@ -63,7 +61,7 @@ namespace NugetRepoReadme
 
         internal IReadmeRewriter ReadmeRewriter { get; set; } = new ReadmeRewriter();
 
-        internal IRepoRelativeReadmePath RepoRelativeReadmePath { get; set; } = new RepoRelativeReadmePath();
+        internal IRepoReadmeFilePathsProvider RepoRelativeReadmePath { get; set; } = new RepoReadmeFilePathsProvider();
 
         internal IRemoveReplaceSettingsProvider RemoveReplaceSettingsProvider { get; set; } = new RemoveReplaceSettingsProvider(
             new MSBuildMetadataProvider(),
@@ -82,14 +80,14 @@ namespace NugetRepoReadme
             }
             else
             {
-                string? repoReadmeRelativePath = RepoRelativeReadmePath.GetRelativeReadmePath(readmePath);
-                if (repoReadmeRelativePath == null)
+                RepoReadmeFilePaths? repoReadmeFilePaths = RepoRelativeReadmePath.GetRelativeReadmePath(readmePath);
+                if (repoReadmeFilePaths == null)
                 {
                     Log.LogError(MessageProvider.CannotFindGitRepository());
                 }
                 else
                 {
-                    TryRewrite(IOHelper.ReadAllText(readmePath), readmePath, repoReadmeRelativePath);
+                    TryRewrite(IOHelper.ReadAllText(readmePath), repoReadmeFilePaths);
                 }
             }
 
@@ -99,7 +97,7 @@ namespace NugetRepoReadme
 
         private void LaunchDebuggerIfRequired()
         {
-            if (Environment.GetEnvironmentVariable("DebugReadmeRewriter") != "1" || System.Diagnostics.Debugger.IsAttached)
+            if (Environment.GetEnvironmentVariable("DebugReadmeRewriter") != "1" || Debugger.IsAttached)
             {
                 return;
             }
@@ -107,7 +105,7 @@ namespace NugetRepoReadme
             _ = Debugger.Launch();
         }
 
-        private void TryRewrite(string readmeContents, string readmeRelativePath, string repoReadmeRelativePath)
+        private void TryRewrite(string readmeContents, RepoReadmeFilePaths repoReadmeFilePaths)
         {
             IRemoveReplaceSettingsResult removeReplaceSettingsResult = RemoveReplaceSettingsProvider.Provide(
                 RemoveReplaceItems,
@@ -123,7 +121,7 @@ namespace NugetRepoReadme
             }
             else
             {
-                Rewrite(readmeContents, readmeRelativePath, repoReadmeRelativePath, removeReplaceSettingsResult.Settings);
+                Rewrite(readmeContents, repoReadmeFilePaths, removeReplaceSettingsResult.Settings);
             }
         }
 
@@ -131,14 +129,19 @@ namespace NugetRepoReadme
 
         private string GetRef() => RepositoryRef ?? RepositoryCommit ?? RepositoryBranch ?? "master";
 
-        private void Rewrite(string readmeContents, string readmeRelativePath, string repoReadmeRelativePath, RemoveReplaceSettings? removeReplaceSettings)
+        private void Rewrite(
+            string readmeContents,
+            RepoReadmeFilePaths repoReadmeFilePaths,
+            RemoveReplaceSettings? removeReplaceSettings)
         {
             string? repositoryUrl = GetRepositoryUrl();
-            var readmeRelativeFileExists = new ReadmeRelativeFileExists(ProjectDirectoryPath, readmeRelativePath);
+            var readmeRelativeFileExists = new ReadmeRelativeFileExists(
+                repoReadmeFilePaths.RepoDirectoryPath,
+                repoReadmeFilePaths.ReadmeDirectoryPath);
             ReadmeRewriterResult readmeRewriterResult = ReadmeRewriter.Rewrite(
                 GetRewriteTagsOptions(),
                 readmeContents,
-                repoReadmeRelativePath,
+                repoReadmeFilePaths.RepoRelativeReadmePath,
                 repositoryUrl,
                 GetRef(),
                 removeReplaceSettings,

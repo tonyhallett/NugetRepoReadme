@@ -8,7 +8,7 @@ namespace NugetRepoReadme
         private static readonly StringBuilder s_contents = new StringBuilder();
         private static bool s_didWrite;
 
-        public static string? FilePath { get; set; } = @"C:\Users\tonyh\Downloads\ref\debug_readme_rewriter.txt";
+        public static string? FilePath { get; set; }
 
         public static void Write(string contents)
         {
@@ -23,7 +23,7 @@ namespace NugetRepoReadme
 
         public static void WriteToFile()
         {
-            if (FilePath == null || !s_didWrite)
+            if (!s_didWrite)
             {
                 return;
             }
