@@ -5,6 +5,10 @@
     <Nullable>enable</Nullable>
     <Configurations>Debug;Release;IntegrationTests</Configurations>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)'=='Debug'">
+    <DebugType>portable</DebugType>
+    <DebugSymbols>true</DebugSymbols>
+  </PropertyGroup>
   <PropertyGroup>
     <Version>1.0.3</Version>
     <Authors>TonyHUk</Authors>
@@ -37,6 +41,9 @@
       <EmbeddedResource Include="buildMultiTargeting\NugetRepoReadme.targets" Pack="true" PackagePath="buildMultiTargeting\"/>
       <EmbeddedResource Include="build\common\NugetRepoReadme.targets" Pack="true" PackagePath="build\common"/>
       <EmbeddedResource Include="build\NugetRepoReadme.targets" Pack="true" PackagePath="build"/>
+  </ItemGroup>
+  <ItemGroup Condition="'$(Configuration)'=='Debug'">
+    <None Include="$(OutputPath)\*.pdb" Pack="true" PackagePath="tasks\$(TargetFramework)" />
   </ItemGroup>
   <ItemGroup>
       <None Include="..\README.md" Pack="true" PackagePath="/"/>

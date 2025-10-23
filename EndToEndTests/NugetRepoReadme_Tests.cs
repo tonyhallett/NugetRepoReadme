@@ -30,6 +30,15 @@ namespace EndToEndTests
 
             public static GeneratedReadme OutputPath(string expected, string expectedOutputPath)
                 => new(expected, ExpectedOutputPath: expectedOutputPath);
+
+            public GeneratedReadme UpdateForDebugConfig()
+            {
+                string debugExpectedOutputPath = ExpectedOutputPath.Replace("Release", "Debug");
+                return this with
+                {
+                    ExpectedOutputPath = debugExpectedOutputPath,
+                };
+            }
         }
 
         private sealed record ProjectFileAdditional(string Properties, string RemoveReplaceItems, string Targets, string TargetFrameworks)
@@ -463,6 +472,7 @@ See [GitHub](https://github.com/tonyhallett/arepo/blob/master/relative/readme.md
             Test(repoReadme, generatedReadme, projectFileAdditional);
         }
 
+        // if debugging the task be sure to keep the Visual Studio debug instance open for subsequent debugging.
         private void Test(
             RepoReadme repoReadme,
             GeneratedReadme generatedReadme,
@@ -471,15 +481,23 @@ See [GitHub](https://github.com/tonyhallett/arepo/blob/master/relative/readme.md
             bool addRepositoryUrl = true,
             bool addGit = true,
             string projectRelativePath = "dependentProject.csproj",
-            Action<IBuildResult>? failureAssertion = null)
+            Action<IBuildResult>? failureAssertion = null,
+            bool debugTask = false)
         {
+            string buildConfig = debugTask ? "Debug" : "Release";
+            if (debugTask)
+            {
+                Environment.SetEnvironmentVariable("DebugReadmeRewriter", "1");
+                generatedReadme = generatedReadme.UpdateForDebugConfig();
+            }
+
             string projectWithReadMe = GetProjectWithReadme(projectFileAdditional, repoReadme, generatedReadme.PackageReadMeFileElementContents, addRepositoryUrl);
             IBuildResult buildResult = _dependentProjectBuilder
                 .NewProject()
                 .AddFiles(GetFiles(additionalFiles, repoReadme, addGit))
                 .AddProject(projectWithReadMe, projectRelativePath)
                 .AddNuPkg(NupkgProvider.GetNuPkgPath())
-                .BuildWithDotNet(); // use (-c Release -bl) for debugging
+                .BuildWithDotNet($"-c {buildConfig} -property:nodeReuse=false");
 
             if (!ProcessFailure(buildResult, failureAssertion))
             {
