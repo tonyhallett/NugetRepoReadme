@@ -5,7 +5,7 @@ namespace NugetRepoReadme.Repo
 {
     internal class RepoReadmeFilePathsProvider : IRepoReadmeFilePathsProvider
     {
-        public RepoReadmeFilePaths? GetRelativeReadmePath(string readmePath)
+        public RepoReadmeFilePaths? Provide(string readmePath)
         {
             List<string> parentDirectories = new List<string>();
             FileInfo readmeFile = new FileInfo(readmePath);

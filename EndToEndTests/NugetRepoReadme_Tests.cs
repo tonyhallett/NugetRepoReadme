@@ -1,13 +1,14 @@
 using NugetBuildTargetsIntegrationTesting;
 using NugetRepoReadme.MSBuild;
 using NugetRepoReadme.RemoveReplace.Settings;
+using NugetRepoReadme.Rewriter;
 
 namespace EndToEndTests
 {
     internal sealed class NugetRepoReadme_Tests
     {
         private const string DefaultPackageReadmeFileElementContents = "package-readme.md";
-        private readonly NugetBuildTargetsTestSetupBuilder _nugetBuildTargetsTestSetupBuilder = new();
+        private readonly DependentProjectBuilder _dependentProjectBuilder = new();
 
         private sealed record RepoReadme(
             string Readme,
@@ -41,7 +42,7 @@ namespace EndToEndTests
         }
 
         [OneTimeTearDown]
-        public void TearDown() => _nugetBuildTargetsTestSetupBuilder.TearDown();
+        public void TearDown() => _dependentProjectBuilder.TearDown();
 
         [Test]
         public void Should_Have_Correct_ReadMe_In_Generated_NuPkg_Repo_Relative()
@@ -246,6 +247,64 @@ $@"<{MsBuildPropertyItemNames.ReadmeRemoveReplaceWordsItem} Include=""{removeRep
                 [(removeReplaceFileContents, removeReplaceFileName)]);
         }
 
+        [Test]
+        public void Should_Replace_ReadmeMarker_With_Readme_AbsoluteUrl_Root()
+        {
+            string removeReplaceItems = ReadmeRemoveReplaceItemString.Create(
+            "1",
+            [
+                ReadmeRemoveReplaceItemString.StartElement("For GitHub only"),
+                ReadmeRemoveReplaceItemString.CommentOrRegexElement(CommentOrRegex.Regex),
+                ReadmeRemoveReplaceItemString.ReplacementTextElement($"See [GitHub]({ReadmeRewriter.ReadmeMarker})")
+            ]);
+            RepoReadme repoReadme = new(@"
+For all
+
+For GitHub only
+
+GitHub only
+");
+            var generatedReadme = GeneratedReadme.Simple(@"
+For all
+
+See [GitHub](https://github.com/tonyhallett/arepo/blob/master/readme.md)");
+            Test(
+                repoReadme,
+                generatedReadme,
+                ProjectFileAdditional.RemoveReplaceItemsOnly(removeReplaceItems));
+        }
+
+        [Test]
+        public void Should_Replace_ReadmeMarker_With_Readme_AbsoluteUrl_Nested()
+        {
+            string removeReplaceItems = ReadmeRemoveReplaceItemString.Create(
+                "1",
+                [
+                    ReadmeRemoveReplaceItemString.StartElement("For GitHub only"),
+                    ReadmeRemoveReplaceItemString.CommentOrRegexElement(CommentOrRegex.Regex),
+                    ReadmeRemoveReplaceItemString.ReplacementTextElement($"See [GitHub]({ReadmeRewriter.ReadmeMarker})")
+                ]);
+            const string readme = @"
+For all
+
+For GitHub only
+
+GitHub only
+";
+            RepoReadme repoReadme = new(
+                readme,
+                "relative/readme.md",
+                "relative/readme.md");
+            var generatedReadme = GeneratedReadme.Simple(@"
+For all
+
+See [GitHub](https://github.com/tonyhallett/arepo/blob/master/relative/readme.md)");
+            Test(
+                repoReadme,
+                generatedReadme,
+                ProjectFileAdditional.RemoveReplaceItemsOnly(removeReplaceItems));
+        }
+
         #endregion
 
         #region PublishRepositoryUrl
@@ -374,7 +433,7 @@ $@"<{MsBuildPropertyItemNames.ReadmeRemoveReplaceWordsItem} Include=""{removeRep
                 repoReadme,
                 generatedReadme,
                 ProjectFileAdditional.PropertiesOnly("<ErrorOnHtml>true</ErrorOnHtml>"),
-                failureAssertion: processResult => Assert.That(processResult.Output, Contains.Substring("Readme has unsupported HTML")));
+                failureAssertion: processResult => Assert.That(processResult.StandardOutput, Contains.Substring("Readme has unsupported HTML")));
         }
         #endregion
 
@@ -415,8 +474,8 @@ $@"<{MsBuildPropertyItemNames.ReadmeRemoveReplaceWordsItem} Include=""{removeRep
             Action<IBuildResult>? failureAssertion = null)
         {
             string projectWithReadMe = GetProjectWithReadme(projectFileAdditional, repoReadme, generatedReadme.PackageReadMeFileElementContents, addRepositoryUrl);
-            IBuildResult buildResult = _nugetBuildTargetsTestSetupBuilder
-                .CreateProject()
+            IBuildResult buildResult = _dependentProjectBuilder
+                .NewProject()
                 .AddFiles(GetFiles(additionalFiles, repoReadme, addGit))
                 .AddProject(projectWithReadMe, projectRelativePath)
                 .AddNuPkg(NupkgProvider.GetNuPkgPath())

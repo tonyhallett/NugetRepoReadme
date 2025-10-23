@@ -2,17 +2,20 @@
 {
     public class RepoReadmeFilePaths
     {
-        public RepoReadmeFilePaths(string repoDirectoryPath, string readmeDirectoryPath, string repoRelativeReadmePath)
+        public RepoReadmeFilePaths(
+            string repoDirectoryPath,
+            string readmeDirectoryPath,
+            string repoRelativeReadmeFilePath)
         {
             RepoDirectoryPath = repoDirectoryPath;
             ReadmeDirectoryPath = readmeDirectoryPath;
-            RepoRelativeReadmePath = repoRelativeReadmePath;
+            RepoRelativeReadmeFilePath = repoRelativeReadmeFilePath;
         }
 
         public string RepoDirectoryPath { get; }
 
         public string ReadmeDirectoryPath { get; }
 
-        public string RepoRelativeReadmePath { get; }
+        public string RepoRelativeReadmeFilePath { get; }
     }
 }

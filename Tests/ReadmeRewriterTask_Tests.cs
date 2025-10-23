@@ -56,7 +56,7 @@ namespace Tests
 
         private sealed class DummyRepoRelativeReadmePath : IRepoReadmeFilePathsProvider
         {
-            public RepoReadmeFilePaths? GetRelativeReadmePath(string readmePath) => new(
+            public RepoReadmeFilePaths? Provide(string readmePath) => new(
                     "repoDirectoryPath",
                     "readmeDirectoryPath",
                     $"relative-{readmePath}");
@@ -79,7 +79,7 @@ namespace Tests
                 MessageProvider = new ConcatenatingArgumentsMessageProvider(),
                 RepositoryUrl = RepositoryUrl,
                 ProjectDirectoryPath = ProjectDirectoryPath,
-                RepoRelativeReadmePath = _dummyDummyRepoRelativeReadmePath,
+                RepoReadmeFilePathsProvider = _dummyDummyRepoRelativeReadmePath,
             };
             _removeReplaceSettingsResult = new TestRemoveReplaceSettingsResult();
             _ = _mockRemoveReplaceSettingsProvider.Setup(removeReplaceSettingsProvider => removeReplaceSettingsProvider.Provide(_removeReplaceTaskItems, null, RemoveCommentIdentifiers))

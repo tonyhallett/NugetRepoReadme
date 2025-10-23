@@ -50,17 +50,17 @@ namespace NugetRepoReadme.Rewriter
         public ReadmeRewriterResult Rewrite(
             RewriteTagsOptions rewriteTagsOptions,
             string readme,
-            string repoReadmeRelativePath,
+            string repoReadmeRelativeFilePath,
             string? repoUrl,
             string @ref,
             RemoveReplaceSettings? removeReplaceSettings,
             IReadmeRelativeFileExists readmeRelativeFileExists)
         {
-            RepoPaths? repoPaths = repoUrl != null ? RepoPaths.Create(repoUrl, @ref, repoReadmeRelativePath) : null;
+            RepoPaths? repoPaths = repoUrl != null ? RepoPaths.Create(repoUrl, @ref, repoReadmeRelativeFilePath) : null;
 
             if (removeReplaceSettings != null)
             {
-                ApplyRepoReadmeReplacementText(removeReplaceSettings.RemovalsOrReplacements, repoPaths, repoReadmeRelativePath);
+                ApplyRepoReadmeReplacementText(removeReplaceSettings.RemovalsOrReplacements, repoPaths, repoReadmeRelativeFilePath);
                 readme = _removeReplacer.RemoveReplace(readme, removeReplaceSettings);
             }
 
@@ -76,10 +76,16 @@ namespace NugetRepoReadme.Rewriter
 
             removalsOrReplacements.Where(removalOrReplacement => removalOrReplacement.ReplacementText?.Contains(ReadmeMarker) == true).ToList().ForEach(replacement =>
             {
-                string url = _repoUrlHelper.GetAbsoluteOrRepoAbsoluteUrl(readmeRelativePath, repoPaths, false);
+                string url = _repoUrlHelper.GetAbsoluteOrRepoAbsoluteUrl(
+                    GetRepoRelativeUrl(readmeRelativePath),
+                    repoPaths,
+                    false);
                 replacement.ReplacementText = replacement.ReplacementText!.Replace(ReadmeMarker, url);
             });
         }
+
+        private string GetRepoRelativeUrl(string readmeRelativePath)
+            => readmeRelativePath.Replace('\\', RepoRelative.Char);
 
         private IMarkdownElementsProcessResult Process(string readme, RepoPaths? repoPaths, RewriteTagsOptions rewriteTagsOptions, IReadmeRelativeFileExists readmeRelativeFileExists)
         {

@@ -6,7 +6,7 @@
     <Configurations>Debug;Release;IntegrationTests</Configurations>
   </PropertyGroup>
   <PropertyGroup>
-    <Version>1.0.2</Version>
+    <Version>1.0.3</Version>
     <Authors>TonyHUk</Authors>
     <Description>Build target for creating a nuget readme from a readme with relative links hosted on GitHub or GitLab.</Description>
     <Copyright>Copyright © 2025 Tony Hallett</Copyright>
@@ -34,20 +34,12 @@
   </PropertyGroup>
   <ItemGroup>
       <!-- forcing the .nupkg to be rebuilt whenever targets changed -->
-      <EmbeddedResource Include="buildMultiTargeting\NugetRepoReadme.targets">
-        <PackagePath>build</PackagePath>
-        <Pack>true</Pack>
-      </EmbeddedResource>
-      <EmbeddedResource Include="build\common\NugetRepoReadme.targets">
-        <PackagePath>build</PackagePath>
-        <Pack>true</Pack>
-      </EmbeddedResource>
-      <EmbeddedResource Include="build\NugetRepoReadme.targets" Pack="true" PackagePath="build" />
+      <EmbeddedResource Include="buildMultiTargeting\NugetRepoReadme.targets" Pack="true" PackagePath="buildMultiTargeting\"/>
+      <EmbeddedResource Include="build\common\NugetRepoReadme.targets" Pack="true" PackagePath="build\common"/>
+      <EmbeddedResource Include="build\NugetRepoReadme.targets" Pack="true" PackagePath="build"/>
   </ItemGroup>
   <ItemGroup>
-      	<None Include="..\README.md" Pack="true" PackagePath="" />
-        <None Include="buildMultiTargeting\**" Pack="true" PackagePath="buildMultiTargeting\" />
-        <None Include="build\common\**" Pack="true" PackagePath="build\common" />
+      <None Include="..\README.md" Pack="true" PackagePath="/"/>
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="AngleSharp" Version="1.3.0" PrivateAssets="all" />

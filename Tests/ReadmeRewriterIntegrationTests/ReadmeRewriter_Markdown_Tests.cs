@@ -2,6 +2,7 @@ using NugetRepoReadme.NugetValidation;
 using NugetRepoReadme.Processing;
 using NugetRepoReadme.RemoveReplace.Settings;
 using NugetRepoReadme.Rewriter;
+using Tests.Utils;
 
 namespace Tests.ReadmeRewriterIntegrationTests
 {
@@ -178,10 +179,13 @@ Paragraph with *italic [italic link]({linkUrl})* and **bold [bold link]({linkUrl
             Assert.That(rewrittenReadMe, Is.EqualTo(expectedReadme));
         }
 
-        [Test]
-        public void Should_Replace_Readme_Marker()
+        [TestCase("/readme.md", "https://github.com/username/reponame/blob/main/readme.md")]
+        [TestCase("\\dir\\readme.md", "https://github.com/username/reponame/blob/main/dir/readme.md")]
+        public void Should_Replace_Readme_Marker(string repoRelativeFilePath, string expectedUrl)
         {
-            const string readMeContent = @"
+            string repoUrl = CreateGitHubRepositoryUrl("username", "reponame");
+
+            const string readmeContent = @"
 Intro
 # Github only
 ";
@@ -189,11 +193,11 @@ Intro
             RemovalOrReplacement githubReplacement = new(CommentOrRegex.Regex, "# Github only", null, githubReplacementLine);
             var removeReplaceSettings = new RemoveReplaceSettings(null, [githubReplacement], []);
 
-            string? rewrittenReadMe = RewriteUserRepoMainReadMe(readMeContent, RewriteTagsOptions.None, removeReplaceSettings).RewrittenReadme;
+            string? rewrittenReadMe = ReadmeRewriter.Rewrite(RewriteTagsOptions.RewriteAll, readmeContent, repoRelativeFilePath, repoUrl, "main", removeReplaceSettings, new DummyReadmeRelativeFileExists())!.RewrittenReadme;
 
-            const string expectedReadMeContent = @"
+            string expectedReadMeContent = $@"
 Intro
-For full details visit [GitHub](https://github.com/username/reponame/blob/main/readme.md)";
+For full details visit [GitHub]({expectedUrl})";
 
             Assert.That(rewrittenReadMe, Is.EqualTo(expectedReadMeContent));
         }

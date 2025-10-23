@@ -61,7 +61,7 @@ namespace NugetRepoReadme
 
         internal IReadmeRewriter ReadmeRewriter { get; set; } = new ReadmeRewriter();
 
-        internal IRepoReadmeFilePathsProvider RepoRelativeReadmePath { get; set; } = new RepoReadmeFilePathsProvider();
+        internal IRepoReadmeFilePathsProvider RepoReadmeFilePathsProvider { get; set; } = new RepoReadmeFilePathsProvider();
 
         internal IRemoveReplaceSettingsProvider RemoveReplaceSettingsProvider { get; set; } = new RemoveReplaceSettingsProvider(
             new MSBuildMetadataProvider(),
@@ -80,7 +80,7 @@ namespace NugetRepoReadme
             }
             else
             {
-                RepoReadmeFilePaths? repoReadmeFilePaths = RepoRelativeReadmePath.GetRelativeReadmePath(readmePath);
+                RepoReadmeFilePaths? repoReadmeFilePaths = RepoReadmeFilePathsProvider.Provide(readmePath);
                 if (repoReadmeFilePaths == null)
                 {
                     Log.LogError(MessageProvider.CannotFindGitRepository());
@@ -141,7 +141,7 @@ namespace NugetRepoReadme
             ReadmeRewriterResult readmeRewriterResult = ReadmeRewriter.Rewrite(
                 GetRewriteTagsOptions(),
                 readmeContents,
-                repoReadmeFilePaths.RepoRelativeReadmePath,
+                repoReadmeFilePaths.RepoRelativeReadmeFilePath,
                 repositoryUrl,
                 GetRef(),
                 removeReplaceSettings,
